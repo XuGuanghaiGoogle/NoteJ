@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteJ</title>
+
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+
+    <!-- highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+    <!-- App Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 顶部应用栏 -->
+    <header class="app-bar" id="appBar">
+        <div class="app-bar__start">
+            <span class="app-bar__logo material-symbols-rounded">edit_note</span>
+            <span class="app-bar__title">NoteJ</span>
+        </div>
+        <div class="app-bar__end">
+            <span class="lang-label" data-i18n="toolbar.langLabel">语言</span>
+            <select class="lang-select" id="btnLangToggle" data-i18n-title="toolbar.lang" aria-label="切换语言">
+                <option value="zh-CN">中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+            </select>
+            <button class="icon-btn" id="btnNewTab" title="新建标签页 (Ctrl+Alt+N)" aria-label="新建标签页" data-i18n-title="toolbar.newTab" data-i18n-aria="toolbar.newTab">
+                <span class="material-symbols-rounded">note_add</span>
+            </button>
+            <button class="icon-btn" id="btnSearch" title="搜索全部标签 (Ctrl+Alt+F)" aria-label="搜索" data-i18n-title="toolbar.search" data-i18n-aria="search.ariaSearch">
+                <span class="material-symbols-rounded">search</span>
+            </button>
+            <button class="icon-btn" id="btnCopyHtml" title="复制为 HTML" aria-label="复制为 HTML" data-i18n-title="toolbar.copyHtml" data-i18n-aria="toolbar.copyHtml">
+                <span class="material-symbols-rounded">content_copy</span>
+            </button>
+            <button class="icon-btn" id="btnExportHtml" title="导出 HTML 文件" aria-label="导出 HTML 文件" data-i18n-title="toolbar.exportHtml" data-i18n-aria="toolbar.exportHtml">
+                <span class="material-symbols-rounded">download</span>
+            </button>
+            <button class="icon-btn" id="btnThemeToggle" title="切换主题" aria-label="切换主题">
+                <span class="material-symbols-rounded">dark_mode</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 标签栏 -->
+    <nav class="tab-bar" id="tabBar">
+        <div class="tab-bar__tabs" id="tabList"></div>
+    </nav>
+
+    <!-- 格式化工具栏 -->
+    <div class="toolbar" id="toolbar" style="display:none;">
+        <div class="toolbar__group">
+            <button class="toolbar__btn" data-action="bold" title="粗体 (Ctrl+B)" data-i18n-title="toolbar.bold">
+                <span class="material-symbols-rounded">format_bold</span>
+            </button>
+            <button class="toolbar__btn" data-action="italic" title="斜体 (Ctrl+I)" data-i18n-title="toolbar.italic">
+                <span class="material-symbols-rounded">format_italic</span>
+            </button>
+            <button class="toolbar__btn" data-action="strikethrough" title="删除线" data-i18n-title="toolbar.strikethrough">
+                <span class="material-symbols-rounded">format_strikethrough</span>
+            </button>
+            <button class="toolbar__btn" data-action="code" title="行内代码 (Ctrl+`)" data-i18n-title="toolbar.code">
+                <span class="material-symbols-rounded">code</span>
+            </button>
+        </div>
+        <div class="toolbar__divider"></div>
+        <div class="toolbar__group">
+            <button class="toolbar__btn" data-action="h1" title="一级标题" data-i18n-title="toolbar.h1">
+                <span class="material-symbols-rounded">format_h1</span>
+            </button>
+            <button class="toolbar__btn" data-action="h2" title="二级标题" data-i18n-title="toolbar.h2">
+                <span class="material-symbols-rounded">format_h2</span>
+            </button>
+            <button class="toolbar__btn" data-action="h3" title="三级标题" data-i18n-title="toolbar.h3">
+                <span class="material-symbols-rounded">format_h3</span>
+            </button>
+        </div>
+        <div class="toolbar__divider"></div>
+        <div class="toolbar__group">
+            <button class="toolbar__btn" data-action="ul" title="无序列表" data-i18n-title="toolbar.ul">
+                <span class="material-symbols-rounded">format_list_bulleted</span>
+            </button>
+            <button class="toolbar__btn" data-action="ol" title="有序列表" data-i18n-title="toolbar.ol">
+                <span class="material-symbols-rounded">format_list_numbered</span>
+            </button>
+            <button class="toolbar__btn" data-action="task" title="任务列表" data-i18n-title="toolbar.task">
+                <span class="material-symbols-rounded">checklist</span>
+            </button>
+            <button class="toolbar__btn" data-action="quote" title="引用" data-i18n-title="toolbar.quote">
+                <span class="material-symbols-rounded">format_quote</span>
+            </button>
+        </div>
+        <div class="toolbar__divider"></div>
+        <div class="toolbar__group">
+            <button class="toolbar__btn" data-action="link" title="链接 (Ctrl+Alt+K)" data-i18n-title="toolbar.link">
+                <span class="material-symbols-rounded">link</span>
+            </button>
+            <button class="toolbar__btn" data-action="image" title="图片" data-i18n-title="toolbar.image">
+                <span class="material-symbols-rounded">image</span>
+            </button>
+            <button class="toolbar__btn" data-action="table" title="表格" data-i18n-title="toolbar.table">
+                <span class="material-symbols-rounded">table</span>
+            </button>
+            <button class="toolbar__btn" data-action="hr" title="水平线" data-i18n-title="toolbar.hr">
+                <span class="material-symbols-rounded">horizontal_rule</span>
+            </button>
+        </div>
+        <div class="toolbar__divider"></div>
+        <div class="toolbar__group">
+            <button class="toolbar__btn" data-action="date" title="插入日期" data-i18n-title="toolbar.date">
+                <span class="material-symbols-rounded">calendar_today</span>
+            </button>
+            <button class="toolbar__btn" data-action="datetime" title="插入日期时间" data-i18n-title="toolbar.datetime">
+                <span class="material-symbols-rounded">schedule</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索面板 -->
+    <div class="search-panel" id="searchPanel" style="display:none;">
+        <div class="search-panel__header">
+            <span class="material-symbols-rounded search-panel__icon">search</span>
+            <input type="text" class="search-panel__input" id="searchInput"
+                   placeholder="搜索全部标签页..." autocomplete="off" data-i18n-placeholder="search.inputPlaceholder">
+            <button class="search-panel__btn" id="btnSearchPrev" title="上一个 (Shift+Enter)" data-i18n-title="search.prevResult">
+                <span class="material-symbols-rounded">arrow_upward</span>
+            </button>
+            <button class="search-panel__btn" id="btnSearchNext" title="下一个 (Enter)" data-i18n-title="search.nextResult">
+                <span class="material-symbols-rounded">arrow_downward</span>
+            </button>
+            <span class="search-panel__count" id="searchCount"></span>
+            <button class="search-panel__btn" id="btnSearchClose" title="关闭 (Escape)" data-i18n-title="search.close">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div class="search-panel__results" id="searchResults"></div>
+    </div>
+
+    <!-- 主编辑区域 -->
+    <main class="main-area" id="mainArea">
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState">
+            <span class="empty-state__icon material-symbols-rounded">edit_note</span>
+            <h2 class="empty-state__title" data-i18n="app.emptyTitle">欢迎使用 NoteJ ✨</h2>
+            <p class="empty-state__desc" data-i18n-html="app.emptyDesc">点击 <strong>+</strong> 新建笔记，或按 <kbd>Ctrl+N</kbd> 开始写作</p>
+        </div>
+
+        <!-- 编辑器容器 -->
+        <div class="editor-container" id="editorContainer" style="display:none;">
+            <!-- 编辑区 -->
+            <div class="editor-pane" id="editorPane">
+                <textarea
+                    class="editor-pane__textarea"
+                    id="editor"
+                    placeholder="在此输入 Markdown 内容..."
+                    spellcheck="false"
+                    data-i18n-placeholder="editor.placeholder"
+                ></textarea>
+            </div>
+
+            <!-- 分割线 -->
+            <div class="splitter" id="splitter" title="拖拽调整宽度" data-i18n-title="editor.splitterTitle"></div>
+
+            <!-- 预览区 -->
+            <div class="preview-pane" id="previewPane">
+                <div class="preview-pane__header">
+                    <span class="preview-pane__label">预览</span>
+                    <div class="preview-pane__tabs">
+                        <button class="preview-pane__tab preview-pane__tab--active" data-preview-mode="html">
+                            <span class="material-symbols-rounded">visibility</span>
+                            <span data-i18n="editor.renderTab">渲染</span>
+                        </button>
+                        <button class="preview-pane__tab" data-preview-mode="source">
+                            <span class="material-symbols-rounded">code</span>
+                            <span data-i18n="editor.sourceTab">源码</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="preview-pane__content markdown-body" id="preview"></div>
+                <pre class="preview-pane__source" id="previewSource" style="display:none;"><code id="previewSourceCode"></code></pre>
+            </div>
+
+            <!-- 移动端视图切换按钮 -->
+            <div class="view-toggle" id="viewToggle">
+                <button class="view-toggle__btn view-toggle__btn--active" data-view="edit">
+                    <span class="material-symbols-rounded">edit</span>
+                    <span data-i18n="editor.viewEdit">编辑</span>
+                </button>
+                <button class="view-toggle__btn" data-view="preview">
+                    <span class="material-symbols-rounded">visibility</span>
+                    <span data-i18n="editor.viewPreview">预览</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 状态栏 -->
+    <footer class="status-bar" id="statusBar">
+        <span id="statusText" data-i18n="status.ready">就绪</span>
+        <span class="status-bar__spacer"></span>
+        <span id="statusStats"></span>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- marked.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <!-- highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/i18n.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/markdown.js"></script>
+    <script src="js/tabs.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
