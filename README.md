@@ -10,12 +10,12 @@
 
 - **多标签页** — 同时编辑多篇笔记
 - **Markdown 实时预览** — 所见即所得
-- **自动保存** — 内容自动保存到本地
+- **自动保存** — 内容按笔记独立保存到 IndexedDB
 - **代码高亮** — 支持多种编程语言
 - **全局搜索** — 搜索所有标签页中的关键词
 - **主题切换** — 亮色 / 暗色 / 自动
 - **语言切换** — 中文 / English / 日本語
-- **导入导出** — JSON 备份还原，导出 HTML
+- **导入导出** — JSON 完整备份、Markdown ZIP、批量 Markdown 导入
 
 ### 快速开始
 
@@ -48,7 +48,8 @@ NoteJ/
 │   └── style.css       # 样式
 ├── js/
 │   ├── i18n.js         # 国际化模块（中/英/日）
-│   ├── storage.js      # localStorage 数据持久化
+│   ├── storage.js      # IndexedDB 数据持久化与旧数据迁移
+│   ├── archive.js      # JSON / ZIP / Markdown 交换格式
 │   ├── markdown.js     # Markdown 渲染（marked.js + highlight.js）
 │   ├── tabs.js         # 标签页管理
 │   ├── editor.js       # 编辑器与工具栏
@@ -71,12 +72,12 @@ NoteJ/
 
 - **Multi-tab** — Edit multiple notes simultaneously
 - **Live Preview** — What you see is what you get
-- **Auto-save** — Content saved automatically to local storage
+- **Auto-save** — Notes are stored independently in IndexedDB
 - **Code Highlighting** — Supports multiple programming languages
 - **Global Search** — Search across all tabs
 - **Theme Toggle** — Light / Dark / Auto
 - **Language Switch** — UI: 中文 / English / 日本語
-- **Import / Export** — JSON backup & restore, export HTML
+- **Import / Export** — JSON backup, Markdown ZIP, and batch Markdown import
 
 ### Quick Start
 
@@ -109,7 +110,8 @@ NoteJ/
 │   └── style.css       # Stylesheet
 ├── js/
 │   ├── i18n.js         # Internationalization (zh/en/ja)
-│   ├── storage.js      # localStorage persistence
+│   ├── storage.js      # IndexedDB persistence and legacy migration
+│   ├── archive.js      # JSON / ZIP / Markdown exchange formats
 │   ├── markdown.js     # Markdown rendering (marked.js + highlight.js)
 │   ├── tabs.js         # Tab management
 │   ├── editor.js       # Editor & toolbar

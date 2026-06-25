@@ -9,11 +9,14 @@ const App = (() => {
     /**
      * 应用入口
      */
-    function init() {
+    async function init() {
         settings = Storage.loadSettings();
 
         // 初始化国际化（必须在 settings 加载之后）
         I18n.init();
+
+        // 初始化 IndexedDB，并迁移旧版 localStorage 笔记
+        await Storage.init();
 
         // 更新已存在的欢迎笔记为当前语言版本
         updateWelcomeNotes();
@@ -149,6 +152,9 @@ const App = (() => {
 
         // 导出 HTML 按钮
         document.getElementById('btnExportHtml')?.addEventListener('click', exportHtml);
+        document.getElementById('btnBackupJson')?.addEventListener('click', () => exportNotes());
+        document.getElementById('btnExportMarkdown')?.addEventListener('click', exportMarkdown);
+        document.getElementById('btnImportNotes')?.addEventListener('click', importNotes);
 
         // 搜索按钮
         document.getElementById('btnSearch')?.addEventListener('click', toggleSearch);
@@ -226,11 +232,21 @@ const App = (() => {
             return;
         }
 
-        // Ctrl+Alt+F: 全局搜索
-        if (ctrl && alt && e.key === 'f') {
+        // Ctrl+Shift+F / Ctrl+Alt+F: 全局搜索
+        if (ctrl && (e.shiftKey || alt) && e.key.toLowerCase() === 'f') {
             e.preventDefault();
             toggleSearch();
             return;
+        }
+
+        // Escape: 关闭搜索面板（即使焦点不在搜索框）
+        if (e.key === 'Escape') {
+            const panel = document.getElementById('searchPanel');
+            if (panel && panel.style.display !== 'none') {
+                e.preventDefault();
+                closeSearch();
+                return;
+            }
         }
 
         // Ctrl+Alt+K: 插入链接
@@ -423,7 +439,13 @@ const App = (() => {
             return;
         }
 
-        const tabs = Tabs.getAll();
+        const activeTab = Tabs.getActive();
+        const activeContent = Editor.getContent();
+        const tabs = Tabs.getAll().map(tab => (
+            activeTab && tab.id === activeTab.id
+                ? { ...tab, content: activeContent }
+                : tab
+        ));
         const lowerQuery = query.toLowerCase();
 
         tabs.forEach(tab => {
@@ -617,15 +639,21 @@ const App = (() => {
     /**
      * 导出笔记 (JSON)
      */
-    function exportNotes() {
-        const data = Storage.exportData();
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'notej-backup-' + new Date().toISOString().split('T')[0] + '.json';
-        a.click();
-        URL.revokeObjectURL(url);
+    async function exportNotes(silent = false) {
+        await Editor.saveNow();
+        downloadBlob(
+            new Blob([Storage.createBackup()], { type: 'application/json;charset=utf-8' }),
+            'notej-backup-' + new Date().toISOString().split('T')[0] + '.json'
+        );
+        if (!silent) showToast(I18n.t('toast.notesExported'), 'success');
+    }
+
+    async function exportMarkdown() {
+        await Editor.saveNow();
+        downloadBlob(
+            Archive.createMarkdownZip(Storage.loadAll()),
+            'notej-markdown-' + new Date().toISOString().split('T')[0] + '.zip'
+        );
         showToast(I18n.t('toast.notesExported'), 'success');
     }
 
@@ -635,30 +663,64 @@ const App = (() => {
     function importNotes() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json';
-        input.addEventListener('change', () => {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const data = Storage.importData(reader.result);
-                if (data) {
-                    // 重新初始化
-                    Tabs.init(
-                        (tabId, tab) => Editor.loadNote(tabId, tab),
-                        (tabId) => {
-                            const active = Tabs.getActive();
-                            if (active && active.id === tabId) Editor.saveNow();
-                        }
-                    );
-                    showToast(I18n.t('toast.imported', { count: data.tabs.length }), 'success');
-                } else {
-                    showToast(I18n.t('toast.importFailed'), 'error');
+        input.accept = '.json,.zip,.md,.markdown';
+        input.multiple = true;
+        input.addEventListener('change', async () => {
+            const files = Array.from(input.files || []);
+            if (files.length === 0) return;
+
+            try {
+                const workspace = await readImportFiles(files);
+                const modeInput = window.prompt(I18n.t('import.modePrompt'), 'merge');
+                if (modeInput === null) return;
+                const mode = modeInput.trim().toLowerCase();
+                if (!['merge', 'replace'].includes(mode)) {
+                    throw new Error(I18n.t('import.invalidMode'));
                 }
-            };
-            reader.readAsText(file);
+
+                await Editor.saveNow();
+                if (mode === 'replace') await exportNotes(true);
+                Storage.importWorkspace(workspace, mode);
+                await Storage.whenIdle();
+                Tabs.reload();
+                const active = Tabs.getActive();
+                if (active) Editor.loadNote(active.id, active);
+                updateStorageInfo();
+                showToast(I18n.t('toast.imported', { count: workspace.tabs.length }), 'success');
+            } catch (error) {
+                console.error('导入失败:', error);
+                showToast(`${I18n.t('toast.importFailed')}: ${error.message}`, 'error');
+            }
         });
         input.click();
+    }
+
+    async function readImportFiles(files) {
+        if (files.length === 1 && files[0].name.toLowerCase().endsWith('.json')) {
+            return Storage.parseBackup(await files[0].text());
+        }
+        if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
+            return Archive.parseMarkdownZip(await files[0].arrayBuffer());
+        }
+
+        const markdownFiles = files.filter(file => /\.(md|markdown)$/i.test(file.name));
+        if (markdownFiles.length !== files.length) {
+            throw new Error(I18n.t('import.mixedFiles'));
+        }
+        const contents = await Promise.all(markdownFiles.map(async file => ({
+            name: file.name,
+            content: await file.text(),
+        })));
+        return Archive.markdownFilesToWorkspace(contents);
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     // 暴露到全局作用域（供 HTML onclick 调用）
@@ -674,6 +736,7 @@ const App = (() => {
         copyHtml,
         exportHtml,
         exportNotes,
+        exportMarkdown,
         importNotes,
         updateStorageInfo,
         openSearch,
@@ -708,5 +771,8 @@ function showToast(message, type = 'info') {
 
 // --- 启动应用 ---
 document.addEventListener('DOMContentLoaded', () => {
-    App.init();
+    App.init().catch(error => {
+        console.error('应用初始化失败:', error);
+        showToast(I18n.t('toast.storageInitFailed'), 'error');
+    });
 });

@@ -1164,6 +1164,41 @@ body {
 
 /* --- 响应式设计 --- */
 @media (max-width: 768px) {
+    .app-bar {
+        padding: 0 6px;
+        gap: 4px;
+    }
+
+    .app-bar__start {
+        flex-shrink: 0;
+    }
+
+    .app-bar__title,
+    .lang-label {
+        display: none;
+    }
+
+    .app-bar__end {
+        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .app-bar__end::-webkit-scrollbar {
+        display: none;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+    }
+
+    .lang-select {
+        width: 72px;
+        flex-shrink: 0;
+    }
+
     .editor-container {
         flex-direction: column;
     }

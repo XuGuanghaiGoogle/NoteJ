@@ -183,6 +183,7 @@ const Tabs = (() => {
         }
 
         data.activeTabId = tabId;
+        Storage.setActiveTab(tabId);
 
         // 更新标签栏高亮
         document.querySelectorAll('.tab-item').forEach(el => {
@@ -271,6 +272,18 @@ const Tabs = (() => {
     }
 
     /**
+     * 同步单条笔记到 Tabs 内存缓存。
+     * Storage 更新后必须调用，避免搜索和标签切换继续使用旧内容。
+     */
+    function syncNote(noteId, note) {
+        if (!data || !note) return;
+        const tab = data.tabs.find(t => t.id === noteId);
+        if (tab) {
+            Object.assign(tab, note);
+        }
+    }
+
+    /**
      * 更新空状态显示
      */
     function updateEmptyState() {
@@ -345,6 +358,7 @@ const Tabs = (() => {
         prev,
         getActive,
         getAll,
+        syncNote,
         render,
         reload,
     };

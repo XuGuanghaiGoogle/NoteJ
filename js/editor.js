@@ -10,6 +10,7 @@ const Editor = (() => {
     let saveTimer = null;
     /** 分割线拖拽状态 */
     let isDragging = false;
+    let pendingSplitRatio = null;
     /** 防抖延迟 (ms) */
     const SAVE_DELAY = 500;
     /** 预览区元素引用 */
@@ -118,7 +119,7 @@ const Editor = (() => {
             const ratio = ((e.clientX - rect.left) / rect.width) * 100;
             const clampedRatio = Math.max(20, Math.min(80, ratio));
             editorContainer.style.setProperty('--split-ratio', clampedRatio + '%');
-            Storage.saveSettings({ splitRatio: Math.round(clampedRatio) });
+            pendingSplitRatio = Math.round(clampedRatio);
         });
 
         document.addEventListener('mouseup', () => {
@@ -126,6 +127,10 @@ const Editor = (() => {
                 isDragging = false;
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
+                if (pendingSplitRatio !== null) {
+                    Storage.saveSettings({ splitRatio: pendingSplitRatio });
+                    pendingSplitRatio = null;
+                }
             }
         });
 
@@ -224,13 +229,21 @@ const Editor = (() => {
     /**
      * 立即保存
      */
-    function saveNow() {
-        if (!currentNoteId || !editorEl) return;
+    async function saveNow() {
+        if (!currentNoteId || !editorEl) return true;
 
         const content = editorEl.value;
         // 只保存内容，不更新标题（标题由 Tabs.startRename 单独管理）
-        Storage.updateNote(currentNoteId, { content });
-        updateStatusBar(I18n.t('status.saved', { time: new Date().toLocaleTimeString(I18n.getLocale()) }));
+        const updated = Storage.updateNote(currentNoteId, { content });
+        const updatedNote = updated.tabs.find(tab => tab.id === currentNoteId);
+        if (updatedNote) {
+            Tabs.syncNote(currentNoteId, updatedNote);
+        }
+        const persisted = await Storage.whenIdle();
+        if (persisted) {
+            updateStatusBar(I18n.t('status.saved', { time: new Date().toLocaleTimeString(I18n.getLocale()) }));
+        }
+        return persisted;
     }
 
     /**
